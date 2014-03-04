@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+ <extension key="no.maf.recurring" type="module">
+  <downloadUrl>http://extensions.circle-interactive.co.uk/no.maf.recurring.zip</downloadUrl>
+  <file>recurring</file>
+  <name>MAF Recurring Payment</name>
+  <description>Recurring contribution support for MAF Norway banking integration</description>
+  <urls>
+    <url desc="Main Extension Page">http://civicrm.org/extensions/offline-recurring-payment</url>
+    <url desc="Documentation">http://civicrm.org/blogs/andyw/offline-recurring-payment-extension</url>
+    <url desc="Support">http://forum.civicrm.org</url>
+    <url desc="Licensing">http://civicrm.org/licensing</url>
+  </urls>
+  <license>AGPL</license>
+  <maintainer>
+    <author>Andrew Walker - Circle Interactive</author>
+    <email>andyw(at)circle-interactive.co.uk</email>
+  </maintainer>
+  <releaseDate>2013-07-19</releaseDate>
+  <version>1.0</version>
+  <develStage>alpha</develStage>
+  <compatibility>
+    <ver>4.1</ver>
+    <ver>4.2</ver>
+    <ver>4.3</ver>
+  </compatibility>
+  <comments>For support, please contact project team on the forums. (http://forum.civicrm.org)</comments>
+</extension>  
