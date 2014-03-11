@@ -99,7 +99,6 @@
           
            {foreach from=$recurArray item=row}
            {assign var=id value=$row.id}
-              <tr><td colspan="6">Row is {$row|@print_r}</td></tr>
            <tr>
               <td>{$row.amount}</td>
               <td>every {$row.frequency_interval} {$row.frequency_unit} </td>
