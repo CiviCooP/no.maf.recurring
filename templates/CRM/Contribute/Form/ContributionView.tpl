@@ -22,6 +22,9 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
+ | BOS1312346 - show earmarking and balansekonto                      |
+ | Erik Hommel (CiviCooP) <erik.hommel@civicoop.org> 27 Mar 2014      |
+ +--------------------------------------------------------------------+
 *}
 <div class="crm-block crm-content-block crm-contribution-view-form-block">
 <h3>{ts}View Contribution{/ts}</h3>
@@ -155,6 +158,31 @@
 	    <td class="label">{ts}Source{/ts}</td>
     	<td>{$source}</td>
 	</tr>
+
+        {* BOS1312346 show earmarking and balansekonto on payment details *}
+        {* retrieve custom field id for earmarking and balansekonto *}
+        {crmAPI var='netsGroupId' entity='CustomGroup' action='getvalue' name='nets_transactions' return='id'}
+        {crmAPI var='earMarkingCustomId' entity='CustomField' action='getvalue' custom_group_id=$netsGroupId name='earmarking' return='id'}
+        {crmAPI var='balanseKontoCustomId' entity='CustomField' action='getvalue' custom_group_id=$netsGroupId name='balansekonto' return='id'}
+        {* retrieve custom field value for earmarking and balansekonto *}
+        {assign var='earMarkingField' value='custom_'|cat:$earMarkingCustomId}
+        {crmAPI var='earMarkingValue' entity='Contribution' action='getvalue' id=$id return=$earMarkingField}
+        {crmAPI var='earMarkingGroupId' entity='OptionGroup' action='getvalue' name='earmarking' return='id'}
+        {crmAPI var='earMarking' entity='OptionValue' action='getvalue' value=$earMarkingValue option_group_id=$earMarkingGroupId return='label'}
+        {assign var='balanseKontoField' value='custom_'|cat:$balanseKontoCustomId}
+        {crmAPI var='balanseKontoValue' entity='Contribution' action='getvalue' id=$id return=$balanseKontoField}
+        {crmAPI var='balanseKontoGroupId' entity='OptionGroup' action='getvalue' name='balansekonto' return='id'}
+        {crmAPI var='balanseKonto' entity='OptionValue' action='getvalue' value=$balanseKontoValue option_group_id=$balanseKontoGroupId return='label'}
+        <tr>
+            <td class="label">{ts}Øremerking{/ts}</td>
+            <td>{$earMarking}</td>
+        </tr>
+        <tr>
+            <td class="label">{ts}Balansekonto{/ts}</td>
+            <td>{$balanseKonto}</td>
+        </tr>
+        {* end BOS1312346 *}
+
 
 	{if $campaign}
 	<tr>
