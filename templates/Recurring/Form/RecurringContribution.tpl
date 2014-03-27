@@ -22,6 +22,9 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
+ | BOS1312346 add earmarking to recurring contribution                |
+ | Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>, 27 Mar 2014     |
+ +--------------------------------------------------------------------+
 *}
 <div class="crm-block crm-form-block crm-export-form-block">
 
@@ -64,6 +67,11 @@
                 <tr>
                     <td class="label">{$form.payment_type.label}</td>
                     <td>{$form.payment_type.html}</td>
+                </tr>
+                {* BOS1312346 add earmarking _id *}
+                <tr>
+                    <td class="label">{$form.earmarking.label}</td>
+                    <td>{$form.earmarking.html}</td>
                 </tr>
                 <tr>
                     <td class="label">{$form.notification_for_bank.label}</td>

@@ -25,6 +25,9 @@
  | BOS1312355 add end_date to recurring contribution page             |
  | Erik Hommel (CiviCooP) erik.hommel@civicoop.org 4 March 2014       |
  +--------------------------------------------------------------------+
+ | BOS1312346 add earmarking to page                                  |
+ | Erik Hommel (CiviCooP) erik.hommel@civicoop.org 27 March 2014      |
+ +--------------------------------------------------------------------+
 *}
 {if $action eq 1 or $action eq 2 or $action eq 8} {* add, update or view *}
     {include file="CRM/Contribute/Form/Contribution.tpl"}

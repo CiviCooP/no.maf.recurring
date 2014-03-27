@@ -149,17 +149,30 @@ function recurring_civicrm_enable() {
     }
 
     // Table to keep track of additional recurring fields ..
-    CRM_Core_DAO::executeQuery("
-        CREATE TABLE IF NOT EXISTS `civicrm_contribution_recur_offline` (
-          `recur_id` int(10) unsigned NOT NULL,
-          `maximum_amount` decimal(20,2) unsigned NOT NULL,
-          `payment_type_id` smallint(5) unsigned NOT NULL,
-          `notification_for_bank` tinyint(1) NOT NULL,
-          `activity_id` int(10) unsigned NOT NULL,
-          PRIMARY KEY (`recur_id`),
-          KEY `activity_id` (`activity_id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-    ");
+    /*
+     * BOS1312346 Earmarking (add field earmarking_id)
+     */
+    if (!CRM_Core_DAO::checkTableExists('civicrm_contribution_recur_offline')) {
+        CRM_Core_DAO::executeQuery("
+            CREATE TABLE IF NOT EXISTS `civicrm_contribution_recur_offline` (
+              `recur_id` int(10) unsigned NOT NULL,
+              `maximum_amount` decimal(20,2) unsigned NOT NULL,
+              `payment_type_id` smallint(5) unsigned NOT NULL,
+              `earmarking_id` smallint(5) unsigned DEFAULT NULL,
+              `notification_for_bank` tinyint(1) NOT NULL,
+              `activity_id` int(10) unsigned NOT NULL,
+              PRIMARY KEY (`recur_id`),
+              KEY `activity_id` (`activity_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+        ");
+    } else {
+        if (!CRM_Core_DAO::checkFieldExists('civicrm_contribution_recur_offline', 'earmarking_id')) {
+            CRM_Core_DAO::executeQuery("
+                ALTER TABLE civicrm_contribution_recur_offline ADD COLUMN 
+                earmarking_id SMALLINT(5) UNSIGNED DEFAULT NULL AFTER payment_type_id");
+        }
+    }
+
 
     // TEMP - perform table upgrades to previous versions
     //CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_contribution_recur_offline` CHANGE `maximum_amount` `maximum_amount` DECIMAL( 20, 2 ) UNSIGNED NOT NULL ");
@@ -467,5 +480,30 @@ function recurring_process_offline_recurring_payments() {
 // cron job converted from standalone cron script to job api call, andyw@circle
 function civicrm_api3_job_process_offline_recurring_payments($params) {
 	recurring_process_offline_recurring_payments();
+}
+/**
+ * BOS1312346 Function to retrieve earmarkings from option group earmarking
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @return array
+ */
+function _getEarmarkingList() {
+    /*
+     * retrieve option group with name earmarking
+     */
+    $optionGroupParams = array(
+        'name'    =>  "earmarking",
+        'return'  =>  "id"
+    );
+    try {
+        $earMarkingId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
+    } catch (CiviCRM_API3_Exception $e) {
+        throw new CiviCRM_API3_Exception('Could not find an option group with the name "earmarking", message from API OptionGroup Getvalue : '.$e->getMessage);
+    }
+    $apiEarMarkings = civicrm_api3('OptionValue', 'Get', array("option_group_id" => $earMarkingId));
+    foreach($apiEarMarkings['values'] as $apiEarMarking) {
+        $earMarking[$apiEarMarking['value']] = $apiEarMarking['label'];
+    }
+    return $earMarking;
 }
 

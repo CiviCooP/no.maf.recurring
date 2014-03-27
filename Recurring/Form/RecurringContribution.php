@@ -9,8 +9,11 @@
  * Distributed under the GNU Affero General Public License, version 3
  * http://www.gnu.org/licenses/agpl-3.0.html
  *
- */
- 
+ * 
+ * BOS1312346 - add earmarking to Recurring Contribution
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 27 Mar 2014
+ */ 
 require_once 'CRM/Core/Form.php';
 require_once 'CRM/Core/Session.php';
 require_once 'CRM/Contribute/DAO/ContributionRecur.php';
@@ -83,6 +86,11 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
                     'recur_id'                => $dao->id,
                     'maximum_amount'          => $dao->maximum_amount,
                     'payment_type'            => $dao->payment_type_id,
+                    /*
+                     * BOS1312346
+                     */
+                    'earmarking'              => $dao->earmarking_id,
+                    
                     'notification_for_bank'   => $dao->notification_for_bank
                     //'standard_price'=>$dao->standard_price ,
                     //'vat_rate'=>$dao->vat_rate 
@@ -138,6 +146,11 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
 
         $this->add('text', 'maximum_amount', ts('Maximum Amount'), array(), true);
         $this->add('select', 'payment_type', ts('Payment Type'), $payment_types, true);
+        /*
+         * BOS1312346
+         */
+        $earmarkings = array(0 => ts('Select...')) + _getEarmarkingList();
+        $this->add('select', 'earmarking', ts('Earmarking'), $earmarkings, true);
     
         $options   = array();
         $options[] = &HTML_QuickForm::createElement('radio', NULL, NULL, 'Yes', 1);
@@ -207,9 +220,8 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
         if(!empty($params['end_date']))
             $end_date = CRM_Utils_Date::processDate($params['end_date']);
         if(!empty($params['next_sched_contribution']))    
-            $next_sched_contribution = CRM_Utils_Date::processDate($params['next_sched_contribution']);
-		
-		$params['cycle_day']  = date('d', strtotime($next_sched_contribution));
+            $next_sched_contribution = CRM_Utils_Date::processDate($params['next_sched_contribution']);	
+            $params['cycle_day']  = date('d', strtotime($next_sched_contribution));
             
         if ($params['action'] == 'add') {
 
@@ -287,17 +299,21 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
             CRM_Utils_Hook::post('edit', 'ContributionRecur', $recur_id, $objectRef);
             $params    = (array)$objectRef;        
         }
-        
+
+        /*
+         * BOS1312346 add earmarking to recurring contribution
+         */
         CRM_Core_DAO::executeQuery("
             REPLACE INTO civicrm_contribution_recur_offline 
-              (recur_id, maximum_amount, payment_type_id, notification_for_bank) 
+              (recur_id, maximum_amount, payment_type_id, notification_for_bank, earmarking_id) 
             VALUES 
-              (%1, %2, %3, %4)
+              (%1, %2, %3, %4, %5)
         ", array(
               1 => array($recur_id, 'Integer'),
               2 => array($params['maximum_amount'], 'Money'),
               3 => array($params['payment_type'], 'Integer'),
-              4 => array($params['notification_for_bank'], 'Integer')
+              4 => array($params['notification_for_bank'], 'Integer'),
+              5 => array($params['earmarking'], 'Integer')
            )
         );
 
