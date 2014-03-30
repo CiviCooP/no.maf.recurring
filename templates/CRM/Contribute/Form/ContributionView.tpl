@@ -160,26 +160,13 @@
 	</tr>
 
         {* BOS1312346 show earmarking and balansekonto on payment details *}
-        {* retrieve custom field id for earmarking and balansekonto *}
-        {crmAPI var='netsGroupId' entity='CustomGroup' action='getvalue' name='nets_transactions' return='id'}
-        {crmAPI var='earMarkingCustomId' entity='CustomField' action='getvalue' custom_group_id=$netsGroupId name='earmarking' return='id'}
-        {crmAPI var='balanseKontoCustomId' entity='CustomField' action='getvalue' custom_group_id=$netsGroupId name='balansekonto' return='id'}
-        {* retrieve custom field value for earmarking and balansekonto *}
-        {assign var='earMarkingField' value='custom_'|cat:$earMarkingCustomId}
-        {crmAPI var='earMarkingValue' entity='Contribution' action='getvalue' id=$id return=$earMarkingField}
-        {crmAPI var='earMarkingGroupId' entity='OptionGroup' action='getvalue' name='earmarking' return='id'}
-        {crmAPI var='earMarking' entity='OptionValue' action='getvalue' value=$earMarkingValue option_group_id=$earMarkingGroupId return='label'}
-        {assign var='balanseKontoField' value='custom_'|cat:$balanseKontoCustomId}
-        {crmAPI var='balanseKontoValue' entity='Contribution' action='getvalue' id=$id return=$balanseKontoField}
-        {crmAPI var='balanseKontoGroupId' entity='OptionGroup' action='getvalue' name='balansekonto' return='id'}
-        {crmAPI var='balanseKonto' entity='OptionValue' action='getvalue' value=$balanseKontoValue option_group_id=$balanseKontoGroupId return='label'}
         <tr>
-            <td class="label">{ts}Øremerking{/ts}</td>
-            <td>{$earMarking}</td>
+            <td class="label">{$earMarkingLabel}</td>
+            <td>{$earMarkingHtml}</td>
         </tr>
         <tr>
-            <td class="label">{ts}Balansekonto{/ts}</td>
-            <td>{$balanseKonto}</td>
+            <td class="label">{$balanseKontoLabel}</td>
+            <td>{$balanseKontoHtml}</td>
         </tr>
         {* end BOS1312346 *}
 

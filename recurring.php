@@ -239,7 +239,7 @@ function recurring_civicrm_pageRun(&$page) {
                 'frequency_interval'      => $dao->frequency_interval,
                 'start_date'              => $dao->start_date,
                 /*
-                 * BOS1312355 add end_date to page
+                 * BOS1312355 add end_date to array
                  */
                 'end_date'                => $dao->end_date,
                 'next_sched_contribution' => $dao->next_sched_contribution
@@ -256,9 +256,106 @@ function recurring_civicrm_pageRun(&$page) {
         //$page->assign('isAdmin', $isAdmin);
         $page->assign('recurArray', $recurArray);
         $page->assign('recurArrayCount', count($recurArray));
-
+        /*
+         * BOS1312346 add earmaking and balanskonto
+         */
+        if (!empty($page->getVar('_id'))) {
+            if ($page->getVar('_action') == CRM_Core_Action::VIEW) {
+                $netsFields = _recurring_getNetsValues($page->getVar('_id'));
+                if (isset($netsFields['earmarking_label'])) {
+                    $page->assign('earMarkingLabel', 'Øremerking');
+                    $page->assign('earMarkingHtml', $netsFields['earmarking_label']);
+                }
+                if (isset($netsFields['balansekonto_label'])) {
+                    $page->assign('balanseKontoLabel', 'Balansekonto');
+                    $page->assign('balanseKontoHtml', $netsFields['balansekonto_label']);                    
+                }
+            }
+        }
     }
-
+    // endo BOS1312346
+}
+/**
+ * Implementation of hook civicrm_buildForm
+ */
+function recurring_civicrm_buildForm($formName, & $form) {
+    /*
+     * BOS1312346 add earmarking and balansekonto to Contribution form
+     * for add and update mode (view is done in ContributionView.tpl)
+     * 
+     * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+     * @date 29 Mar 2014
+     */
+    if ($formName == 'CRM_Contribute_Form_Contribution') {
+        if ($form->getVar('_action') == CRM_Core_Action::ADD || $form->getVar('_action') == CRM_Core_Action::UPDATE) {
+            $earMarkings = array(0 => ts('- select -')) + _recurring_getOptionList('earmarking');
+            $form->add('select', 'earmarking_id', ts('Øremerking'), $earMarkings, true);
+            $balanseKontos = array(0 => ts('- select -')) + _recurring_getOptionList('balansekonto');
+            $form->add('select', 'balansekonto_id', ts('Balansekonto'), $balanseKontos, true);
+            if ($form->getVar('_action') == CRM_Core_Action::UPDATE) {
+                $netsValues = _recurring_getNetsValues($form->getVar('_id'));
+                if (isset($netsValues['earmarking_value'])) {
+                    $defaults['earmarking_id'] = $netsValues['earmarking_value'];
+                }
+                if (isset($netsValues['balansekonto_value'])) {
+                    $defaults['balansekonto_id'] = $netsValues['balansekonto_value'];
+                }
+            } else {
+                $defaults['earmarking_id'] = '330';
+                $form->setDefaults($defaults);
+                $defaults['balansekonto_id'] = '1920';
+            }
+            $form->setDefaults($defaults);            
+        }
+    }
+}
+/**
+ * Implementation of hook civicrm_postProcess
+ */
+function recurring_civicrm_postProcess($formName, & $form) {
+    /*
+     * BOS1312346 update earmarking and balansekonto in nets_transactions
+     * custom group in create and update mode
+     * 
+     * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+     * @date 30 Mar 2014
+     */
+    if ($formName == 'CRM_Contribute_Form_Contribution') {
+        $netsGroupParams = array(
+            'name'  =>  'nets_transactions',
+            'return'=>  'table_name'
+        );
+        try {
+            $netsGroupTable = civicrm_api3('CustomGroup', 'Getvalue', $netsGroupParams);
+        } catch (CiviCRM_API3_Exception $e) {
+            throw new CiviCRM_API3_Exception('Could not find custom group with name
+                nets_transactions, something is wrong with your setup. Error message 
+                from API CustomGroup Getvalue :'.$e->getMessage());
+        }
+        if ($form->getVar('_action') == CRM_Core_Action::UPDATE || $form->getVar('_action') == CRM_Core_Action::ADD) {
+            if ($form->getVar('_action') == CRm_Core_Action::UPDATE) {
+                $contributionId = $form->getVar('_id');
+            } else {
+                $qryMax = 'SELECT MAX(entity_id) AS contributionId FROM '.$netsGroupTable;
+                $daoMax = CRM_Core_DAO::executeQuery($qryMax);
+                if ($daoMax->fetch()) {
+                    $contributionId = $daoMax->contributionId;
+                }
+            }
+            $defaultValues = $form->getVar('_defaultValues');
+            $submitValues = $form->getVar('_submitValues');
+            $earMarkingField = _recurring_getNetsField('earmarking');
+            $balanseKontoField = _recurring_getNetsField('balansekonto');
+            $replaceQuery = 'REPLACE INTO '.$netsGroupTable.' (entity_id, '.$earMarkingField.', '.
+                $balanseKontoField.') VALUES(%1, %2, %3)';
+            $replaceParams = array(
+                1 => array($contributionId, 'Integer'),
+                2 => array($submitValues['earmarking_id'], 'Integer'),
+                3 => array($submitValues['balansekonto_id'], 'Integer')
+            );
+            CRM_Core_DAO::executeQuery($replaceQuery, $replaceParams);
+        }
+    }
 }
 
 function _recurring_getCRMVersion() {
@@ -487,23 +584,132 @@ function civicrm_api3_job_process_offline_recurring_payments($params) {
  * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
  * @return array
  */
-function _getEarmarkingList() {
+function _recurring_getOptionList($listName) {
     /*
      * retrieve option group with name earmarking
      */
     $optionGroupParams = array(
-        'name'    =>  "earmarking",
+        'name'    =>  $listName,
         'return'  =>  "id"
     );
     try {
-        $earMarkingId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
+        $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
     } catch (CiviCRM_API3_Exception $e) {
-        throw new CiviCRM_API3_Exception('Could not find an option group with the name "earmarking", message from API OptionGroup Getvalue : '.$e->getMessage);
+        throw new CiviCRM_API3_Exception('Could not find an option group with the name'.$listName.', message from API OptionGroup Getvalue : '.$e->getMessage);
     }
-    $apiEarMarkings = civicrm_api3('OptionValue', 'Get', array("option_group_id" => $earMarkingId));
-    foreach($apiEarMarkings['values'] as $apiEarMarking) {
-        $earMarking[$apiEarMarking['value']] = $apiEarMarking['label'];
+    $apiOptionList = civicrm_api3('OptionValue', 'Get', array("option_group_id" => $optionGroupId));
+    foreach($apiOptionList['values'] as $optionElement) {
+        $optionList[$optionElement['value']] = $optionElement['label'];
     }
-    return $earMarking;
+    return $optionList;
 }
-
+/**
+ * BOS1312346 Function to retrieve the field name of a field in the
+ * nets_transactions custom group
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 29 Mar 2014
+ * @param string $fieldName
+ * @return string $columnName
+ * @throws CiviCRM_API3_Exception when nets_transactions not found
+ */
+function _recurring_getNetsField($fieldName) {
+    $netsGroupParams = array(
+        'name'  =>  'nets_transactions',
+        'return'=>  'id'
+    );
+    try {
+        $netsGroupId = civicrm_api3('CustomGroup', 'Getvalue', $netsGroupParams);
+    } catch (CiviCRM_API3_Exception $e) {
+        throw new CiviCRM_API3_Exception('Could not find custom group with name
+            nets_transactions, something is wrong with your setup. Error message 
+            from API CustomGroup Getvalue :'.$e->getMessage());
+    }
+    if (!empty($netsGroupId)) {
+        $fieldParams = array(
+            'custom_group_id'   =>  $netsGroupId,
+            'name'              =>  $fieldName,
+            'return'            =>  'column_name'
+        );
+        try {
+            $columnName = civicrm_api3('CustomField', 'Getvalue', $fieldParams);
+        } catch (CiviCRM_API3_Exception $e) {
+            $columnName = "";
+        }
+        return $columnName;
+    }
+}
+/**
+ * BOS1312346 Function to retrieve option value for earmarking or balansekonto
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 29 Mar 2014
+ * @param int $optionValue
+ * @param string $optionName
+ * @return string $optionLabel
+ * @throws CiviCRM_API3_Exception when no option group or value found
+ */
+function _recurring_getNetsOptionValue($optionValue, $optionName) {
+    if (empty($optionValue) || empty($optionName)) {
+        return NULL;
+    }
+    $optionGroupParams = array(
+        'name'  =>  $optionName,
+        'return'=>  'id'
+    );
+    try {
+        $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
+    } catch (CiviCRM_API3_Exception $e) {
+        throw new CiviCRM_API3_Exception('Could not find an option group for '.
+            $optionName.' , error message from API OptionGroup Getvalue : '.$e->getMessage());
+    }
+    $optionValueParams = array(
+        'option_group_id'   =>  $optionGroupId,
+        'value'             =>  $optionValue,
+        'return'            =>  'label'
+    );
+    try {
+        $optionLabel = civicrm_api3('OptionValue', 'Getvalue', $optionValueParams);
+    } catch (CiviCRM_API3_Exception $e) {
+        throw new CiviCRM_API3_Exception('Could not find a valid label in option group  '.
+            $optionName.' for value '.$optionValue.' , error message from API OptionValue Getvalue : '.$e->getMessage());
+    }
+    return $optionLabel;    
+}
+/**
+ * BOS1312346 Function to retrieve values for earmarking and balanskonto for contribution
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 29 Mar 2014
+ * @param int $contributionId
+ * @return array $netsValues
+ * @throws CiviCRM_API3_Exception when no custom group nets_transactions
+ */
+function _recurring_getNetsValues($contributionId) {
+    $netsValues = array();
+    if (empty($contributionId)) {
+        return $netsValues;
+    }
+    $earMarkingField = _recurring_getNetsField("earmarking");
+    $balanseKontoField = _recurring_getNetsField('balansekonto');
+    $netsGroupParams = array(
+        'name'  =>  'nets_transactions',
+        'return'=>  'table_name'
+    );
+    try {
+        $netsGroupTable = civicrm_api3('CustomGroup', 'Getvalue', $netsGroupParams);
+    } catch (CiviCRM_API3_Exception $e) {
+        throw new CiviCRM_API3_Exception('Could not find custom group with name
+            nets_transactions, something is wrong with your setup. Error message 
+            from API CustomGroup Getvalue :'.$e->getMessage());
+    }
+    $qryNets = 'SELECT '.$earMarkingField.', '.$balanseKontoField.' FROM '.$netsGroupTable.' WHERE entity_id = '.$contributionId;
+    $daoNets = CRM_Core_DAO::executeQuery($qryNets);
+    if ($daoNets->fetch()) {
+        $netsValues['earmarking_label'] = _recurring_getNetsOptionValue($daoNets->$earMarkingField, 'earmarking');
+        $netsValues['earmarking_value'] = $daoNets->$earMarkingField;
+        $netsValues['balansekonto_label'] = _recurring_getNetsOptionValue($daoNets->$balanseKontoField, 'balansekonto');
+        $netsValues['balansekonto_value'] = $daoNets->$balanseKontoField;
+    }
+    return $netsValues;
+}

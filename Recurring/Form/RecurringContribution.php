@@ -149,7 +149,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
         /*
          * BOS1312346
          */
-        $earmarkings = array(0 => ts('Select...')) + _getEarmarkingList();
+        $earmarkings = array(0 => ts('Select...')) + _recurring_getEarmarkingList();
         $this->add('select', 'earmarking', ts('Earmarking'), $earmarkings, true);
     
         $options   = array();
