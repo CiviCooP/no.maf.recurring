@@ -99,6 +99,18 @@
       {/if} {help id="id-financial_type"}
       </td>
     </tr>
+        {* BOS1312346 *}
+    <tr class="crm-contribution-form-block">
+        <td class="label">{$form.earmarking_id.label}</td>
+        <td>{$form.earmarking_id.html}</td>  
+    </tr>
+    <tr class="crm-contribution-form-block">
+        <td class="label">{$form.balansekonto_id.label}</td>
+        <td>{$form.balansekonto_id.html}</td>  
+    </tr>
+    {* end BOS1312346 *}
+
+    
     {if $action eq 2 and $lineItem and !$defaultContribution}
     <tr>
       <td class="label">{ts}Contribution Amount{/ts}</td>
@@ -275,17 +287,6 @@
               <span class="description">{ts}Leave blank for non-monetary contributions.{/ts}</span>
             </td>
           </tr>  
-          
-          {* BOS1312346 *}
-          <tr class="crm-contribution-form-block">
-              <td class="label">{$form.earmarking_id.label}</td>
-              <td>{$form.earmarking_id.html}</td>  
-          </tr>
-          <tr class="crm-contribution-form-block">
-              <td class="label">{$form.balansekonto_id.label}</td>
-              <td>{$form.balansekonto_id.html}</td>  
-          </tr>
-          {* end BOS1312346 *}
           
           {if $showCheckNumber || !$isOnline}
             <tr id="checkNumber" class="crm-contribution-form-block-check_number">

@@ -18,6 +18,12 @@
  * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
  * @date 4 March 2014
  */
+/**
+ * Issue BOS1312346 add default earmarking and financial type when creating 
+ * contribution in function recurring_process_offline_recurring payments (cron job)
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 31 Mar 2014
+ */
 
 define('MAF_RECURRING_DAYS_LOOKAHEAD', 60);
 
@@ -259,9 +265,14 @@ function recurring_civicrm_pageRun(&$page) {
         /*
          * BOS1312346 add earmaking and balanskonto
          */
-        if (!empty($page->getVar('_id'))) {
-            if ($page->getVar('_action') == CRM_Core_Action::VIEW) {
-                $netsFields = _recurring_getNetsValues($page->getVar('_id'));
+        if ($page->getVar('_action') == CRM_Core_Action::VIEW) {
+            try {
+                $contributionId = $page->getVar('_id');
+            } catch (Exception $ex) {
+                $contributionId = 0;
+            }
+            if (!empty($contributionId)) {
+                $netsFields = _recurring_getNetsValues($contributionId);
                 if (isset($netsFields['earmarking_label'])) {
                     $page->assign('earMarkingLabel', 'Øremerking');
                     $page->assign('earMarkingHtml', $netsFields['earmarking_label']);
@@ -296,16 +307,22 @@ function recurring_civicrm_buildForm($formName, & $form) {
                 $netsValues = _recurring_getNetsValues($form->getVar('_id'));
                 if (isset($netsValues['earmarking_value'])) {
                     $defaults['earmarking_id'] = $netsValues['earmarking_value'];
+                } else {
+                    $defaults['earmarking_id'] = 330;
                 }
                 if (isset($netsValues['balansekonto_value'])) {
                     $defaults['balansekonto_id'] = $netsValues['balansekonto_value'];
+                } else {
+                    $defaults['balansekonto_id'] = 1920;
                 }
             } else {
-                $defaults['earmarking_id'] = '330';
+                $defaults['earmarking_id'] = 330;
                 $form->setDefaults($defaults);
-                $defaults['balansekonto_id'] = '1920';
+                $defaults['balansekonto_id'] = 1920;
             }
-            $form->setDefaults($defaults);            
+            if (isset($defaults) && !empty($defaults)) {
+                $form->setDefaults($defaults);          
+            }
         }
     }
 }
@@ -440,7 +457,6 @@ function recurring_process_offline_recurring_payments() {
     $output  = array();
 
     while($dao->fetch()) {
-
         $exist = false;
         $contact_id                 = $dao->contact_id;
         $hash                       = md5(uniqid(rand(), true));
@@ -712,4 +728,97 @@ function _recurring_getNetsValues($contributionId) {
         $netsValues['balansekonto_value'] = $daoNets->$balanseKontoField;
     }
     return $netsValues;
+}
+/**
+ * BOS1312346 function to get financial type based on earmarking
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 31 Mar 2014
+ * @param int $earMarking
+ * @return int $finTypeId
+ */
+function _recurring_getFinType($earMarking) {
+    $financialTypes = civicrm_api3('FinancialType', 'Get', array());
+    foreach($financialTypes['values'] as $financialType) {
+        switch($financialType['name']) {
+            case "Flysponsor":
+                $flyFinTypeId = $financialType['id'];
+                break;
+            case "Fuelsponsor":
+                $fuelFinTypeId = $financialType['id'];
+                break;
+            case "Setesponsor":
+                $seteFinTypeId = $financialType['id'];
+        }
+    }
+    switch ($earMarking) {
+        case 330:
+            if (isset($seteFinTypeId)) {
+                $finTypeId = $seteFinTypeId;
+            } else {
+                $finTypeId = 1;
+            }
+            break;
+        case 331:
+            if (isset($flyFinTypeId)) {
+                $finTypeId = $flyFinTypeId;
+            } else {
+                $finTypeId = 1;
+            }
+            break;
+        case 333:
+            if (isset($fuelFinTypeId)) {
+                $finTypeId = $fuelFinTypeId;
+            } else {
+                $finTypeId = 1;
+            }
+            break;
+        default:
+            $finTypeId = 1;
+    }
+    return $finTypeId;
+}
+/**
+ * BOS1312346 Function to set the defaults for earmarking and balansekonto in 
+ * nets transaction custom group. Defaults based on recurring contribution
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 31 Mar 2014
+ * @param int $contributionId
+ * @param int $recurId
+ * @return void
+ */
+function _recurring_setNetsDefaults($contributionId, $recurId) {
+    if (empty($contributionId) || empty($recurId)) {
+        return;
+    }
+    /*
+     * retrieve earmarking from recurring contribution
+     */
+    $daoEarmark = CRM_Core_DAO::executeQuery('SELECT earmarking_id FROM '
+        .'civicrm_contribution_recur_offline WHERE recur_id = '.$recurId);
+    if ($daoEarmark->fetch()) {
+        $netsGroupParams = array(
+            'name'  =>  'nets_transactions',
+            'return'=>  'table_name'
+        );
+        try {
+            $netsGroupTable = civicrm_api3('CustomGroup', 'Getvalue', $netsGroupParams);
+        } catch (CiviCRM_API3_Exception $e) {
+            throw new CiviCRM_API3_Exception('Could not find custom group with name
+                nets_transactions, something is wrong with your setup. Error message 
+                from API CustomGroup Getvalue :'.$e->getMessage());
+        }
+        $earMarkingField = _recurring_getNetsField('earmarking');
+        $balanseKontoField = _recurring_getNetsField('balansekonto');
+        $netsSql = 'REPLACE INTO '.$netsGroupTable.' (entity_id, '.$earMarkingField.', '.
+            $balanseKontoField.') VALUES(%1, %2, %3)';
+        $netsParams = array(
+            1 => array($contributionId, 'Integer'),
+            2 => array($daoEarmark->earmarking_id, 'Integer'),
+            3 => array(1920, 'Integer')
+        );
+        CRM_Core_DAO::executeQuery($netsSql, $netsParams);
+    }
+    return;
 }

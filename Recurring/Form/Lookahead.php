@@ -78,9 +78,13 @@ class Recurring_Form_Lookahead {
         ) {
 
             try {
-                civicrm_api3('contribution', 'create', array(
+                $createdContributiion = civicrm_api3('contribution', 'create', array(
+                    /*
+                     * BOS1312346 add financial type to contribution
+                     * from recur (removed default 1)
+                     */
                     'total_amount'           => $params['amount'],
-                    'financial_type_id'      => 1, 
+                    'financial_type_id'      => $params['financial_type_id'], 
                     'contact_id'             => $params['cid'],
                     'receive_date'           => $date->format('c'),
                     'trxn_id'                => '',
@@ -93,6 +97,11 @@ class Recurring_Form_Lookahead {
                 $error = $e->getMessage();
                 break;
             }
+            /*
+             * BOS1312346 set default values for earmarking and balansekonto
+             * in nets_transactions custom group
+             */
+            _recurring_setNetsDefaults($createdContributiion['id'], $params['recur_id']);
 
         }
 

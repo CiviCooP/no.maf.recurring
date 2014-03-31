@@ -149,7 +149,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
         /*
          * BOS1312346
          */
-        $earmarkings = array(0 => ts('Select...')) + _recurring_getEarmarkingList();
+        $earmarkings = array(0 => ts('Select...')) + _recurring_getOptionList('earmarking');
         $this->add('select', 'earmarking', ts('Earmarking'), $earmarkings, true);
     
         $options   = array();
@@ -209,8 +209,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
      * @access public
      * @return None
      */
-    public function postProcess() {
-        
+    public function postProcess() {        
         $config =& CRM_Core_Config::singleton();
         $params = $this->controller->exportValues();
         $params['recur_id'] = $this->get('id');
@@ -250,10 +249,23 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
                 $values          .= ", %12";
                 $recur_params[12] = array($end_date, 'String');
             }
-
+            
+            /*
+             * BOS1312346 set financial type based on earmarking
+             */
+            $fields .= ", financial_type_id";
+            $values .= ", %13";
+            if (isset($params['earmarking'])) {
+                $finTypeId = _recurring_getFinType($params['earmarking']);
+            } else {
+                $finTypeId = 1;
+            }
+            $recur_params[13] = array($finTypeId, 'Positive');
+            $params['financial_type_id'] = $finTypeId;
+            // end BOS1312346
+            
             $sql    = sprintf("INSERT INTO civicrm_contribution_recur (%s) VALUES (%s)", $fields, $values);
-            $status = ts('Recurring Contribution setup successfully');        
-        
+            $status = ts('Recurring Contribution setup successfully');
             CRM_Core_DAO::executeQuery($sql, $recur_params);
             
             $params['id'] = $params['recur_id'] = $recur_id 
@@ -287,6 +299,20 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
                 $recur_params[9] = array($end_date, 'String');
             }
 
+            /*
+             * BOS1312346 set financial type based on earmarking
+             */
+            $fields .= ", financial_type_id";
+            $values .= ", %13";
+            if (isset($params['earmarking'])) {
+                $finTypeId = _recurring_getFinType($params['earmarking']);
+            } else {
+                $finTypeId = 1;
+            }
+            $recur_params[13] = array($finTypeId, 'Positive');
+            $params['financial_type_id'] = $finTypeId;
+            // end BOS1312346
+
             $sql   .= ' WHERE id = %8';                         
             $status = ts('Recurring Contribution updated');
 
@@ -301,21 +327,25 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
         }
 
         /*
-         * BOS1312346 add earmarking to recurring contribution
+         * BOS1312346 add earmarking to recurring contribution offline
          */
-        CRM_Core_DAO::executeQuery("
+        if (empty($params['notification_for_bank'])) {
+            $params['notification_for_bank'] = 0;
+        }
+        $recurOfflineSql = "
             REPLACE INTO civicrm_contribution_recur_offline 
               (recur_id, maximum_amount, payment_type_id, notification_for_bank, earmarking_id) 
             VALUES 
               (%1, %2, %3, %4, %5)
-        ", array(
+        ";
+        $recurOfflineParams = array(
               1 => array($recur_id, 'Integer'),
               2 => array($params['maximum_amount'], 'Money'),
               3 => array($params['payment_type'], 'Integer'),
               4 => array($params['notification_for_bank'], 'Integer'),
               5 => array($params['earmarking'], 'Integer')
-           )
         );
+        CRM_Core_DAO::executeQuery($recurOfflineSql, $recurOfflineParams);
 
         // additional lookahead functionality to create contributions 6 weeks in advance
         require_once __DIR__ . DIRECTORY_SEPARATOR . 'Lookahead.php';
