@@ -93,13 +93,13 @@
     <tr class="crm-contribution-form-block-payment_processor_id"><td class="label nowrap">{$form.payment_processor_id.label}<span class="marker"> * </span></td><td>{$form.payment_processor_id.html}</td></tr>
     {/if}
     <tr class="crm-contribution-form-block-contribution_type_id crm-contribution-form-block-financial_type_id">
-      <td class="label">{$form.financial_type_id.label}</td><td{$valueStyle}>{$form.financial_type_id.html}&nbsp;
+      <td class="label">PIPO!{$form.financial_type_id.label}</td><td{$valueStyle}>{$form.financial_type_id.html}&nbsp;
       {if $is_test}
         {ts}(test){/ts}
       {/if} {help id="id-financial_type"}
       </td>
     </tr>
-        {* BOS1312346 *}
+    {* BOS1312346 *}
     <tr class="crm-contribution-form-block">
         <td class="label">{$form.earmarking_id.label}</td>
         <td>{$form.earmarking_id.html}</td>  
