@@ -330,49 +330,53 @@ function recurring_civicrm_buildForm($formName, & $form) {
  * Implementation of hook civicrm_postProcess
  */
 function recurring_civicrm_postProcess($formName, & $form) {
-    /*
-     * BOS1312346 update earmarking and balansekonto in nets_transactions
-     * custom group in create and update mode
-     * 
-     * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
-     * @date 30 Mar 2014
-     */
-    if ($formName == 'CRM_Contribute_Form_Contribution') {
-        $netsGroupParams = array(
-            'name'  =>  'nets_transactions',
-            'return'=>  'table_name'
-        );
-        try {
-            $netsGroupTable = civicrm_api3('CustomGroup', 'Getvalue', $netsGroupParams);
-        } catch (CiviCRM_API3_Exception $e) {
-            throw new CiviCRM_API3_Exception('Could not find custom group with name
-                nets_transactions, something is wrong with your setup. Error message 
-                from API CustomGroup Getvalue :'.$e->getMessage());
-        }
-        if ($form->getVar('_action') == CRM_Core_Action::UPDATE || $form->getVar('_action') == CRM_Core_Action::ADD) {
-            if ($form->getVar('_action') == CRm_Core_Action::UPDATE) {
-                $contributionId = $form->getVar('_id');
-            } else {
-                $qryMax = 'SELECT MAX(entity_id) AS contributionId FROM '.$netsGroupTable;
-                $daoMax = CRM_Core_DAO::executeQuery($qryMax);
-                if ($daoMax->fetch()) {
-                    $contributionId = $daoMax->contributionId;
-                }
-            }
-            $defaultValues = $form->getVar('_defaultValues');
-            $submitValues = $form->getVar('_submitValues');
-            $earMarkingField = _recurring_getNetsField('earmarking');
-            $balanseKontoField = _recurring_getNetsField('balansekonto');
-            $replaceQuery = 'REPLACE INTO '.$netsGroupTable.' (entity_id, '.$earMarkingField.', '.
-                $balanseKontoField.') VALUES(%1, %2, %3)';
-            $replaceParams = array(
-                1 => array($contributionId, 'Integer'),
-                2 => array($submitValues['earmarking_id'], 'Integer'),
-                3 => array($submitValues['balansekonto_id'], 'Integer')
-            );
-            CRM_Core_DAO::executeQuery($replaceQuery, $replaceParams);
-        }
+  /*
+   * BOS1312346 update earmarking and balansekonto in nets_transactions
+   * custom group in create and update mode
+   * 
+   * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+   * @date 30 Mar 2014
+   */
+  if ($formName == 'CRM_Contribute_Form_Contribution') {
+    $netsGroupParams = array(
+      'name'  =>  'nets_transactions',
+      'return'=>  'table_name'
+    );
+    try {
+      $netsGroupTable = civicrm_api3('CustomGroup', 'Getvalue', $netsGroupParams);
+    } catch (CiviCRM_API3_Exception $e) {
+      throw new CiviCRM_API3_Exception('Could not find custom group with name
+        nets_transactions, something is wrong with your setup. Error message 
+        from API CustomGroup Getvalue :'.$e->getMessage());
     }
+    if ($form->getVar('_action') == CRM_Core_Action::UPDATE || $form->getVar('_action') == CRM_Core_Action::ADD) {
+      if ($form->getVar('_action') == CRM_Core_Action::UPDATE) {
+        $earMarkingField = _recurring_getNetsField('earmarking');
+        $balanseKontoField = _recurring_getNetsField('balansekonto');
+        $contributionId = $form->getVar('_id');
+        $earmarkQuery = 'UPDATE '.$netsGroupTable.' SET '.$earMarkingField.' = %2, '
+          .$balanseKontoField.' = %3 WHERE entity_id = %1';
+      } else {
+        $qryMax = 'SELECT MAX(entity_id) AS contributionId FROM '.$netsGroupTable;
+        $daoMax = CRM_Core_DAO::executeQuery($qryMax);
+        if ($daoMax->fetch()) {
+          $contributionId = $daoMax->contributionId;
+        }
+        $earmarkQuery = 'INSERT INTO '.$netsGroupTable.' (entity_id, '.$earMarkingField.', '.
+          $balanseKontoField.') VALUES(%1, %2, %3)';
+      }
+      $submitValues = $form->getVar('_submitValues');
+      /*
+       * update fields in NETS TRANS record
+       */
+      $earmarkParams = array(
+        1 => array($contributionId, 'Integer'),
+        2 => array($submitValues['earmarking_id'], 'Integer'),
+        3 => array($submitValues['balansekonto_id'], 'Integer')
+      );
+      CRM_Core_DAO::executeQuery($earmarkQuery, $earmarkParams);
+    }
+  }
 }
 
 function _recurring_getCRMVersion() {
