@@ -363,7 +363,7 @@ function recurring_civicrm_postProcess($formName, & $form) {
         if ($daoMax->fetch()) {
           $contributionId = $daoMax->contributionId;
         }
-        $earmarkQuery = 'INSERT INTO '.$netsGroupTable.' (entity_id, '.$earMarkingField.', '.
+        $earmarkQuery = 'REPLACE INTO '.$netsGroupTable.' (entity_id, '.$earMarkingField.', '.
           $balanseKontoField.') VALUES(%1, %2, %3)';
       }
       $submitValues = $form->getVar('_submitValues');
