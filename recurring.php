@@ -349,10 +349,11 @@ function recurring_civicrm_postProcess($formName, & $form) {
         nets_transactions, something is wrong with your setup. Error message 
         from API CustomGroup Getvalue :'.$e->getMessage());
     }
+    $earMarkingField = _recurring_getNetsField('earmarking');
+    $balanseKontoField = _recurring_getNetsField('balansekonto');
+    
     if ($form->getVar('_action') == CRM_Core_Action::UPDATE || $form->getVar('_action') == CRM_Core_Action::ADD) {
       if ($form->getVar('_action') == CRM_Core_Action::UPDATE) {
-        $earMarkingField = _recurring_getNetsField('earmarking');
-        $balanseKontoField = _recurring_getNetsField('balansekonto');
         $contributionId = $form->getVar('_id');
         $earmarkQuery = 'UPDATE '.$netsGroupTable.' SET '.$earMarkingField.' = %2, '
           .$balanseKontoField.' = %3 WHERE entity_id = %1';
