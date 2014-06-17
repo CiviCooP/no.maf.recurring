@@ -25,7 +25,10 @@
  | BOS1312346 - show earmarking and balansekonto                      |
  | Erik Hommel (CiviCooP) <erik.hommel@civicoop.org> 27 Mar 2014      |
  +--------------------------------------------------------------------+
-*}
+ | BOS1405148 - show linked activity and donorgroup                   |
+ | Erik Hommel (CiviCooP) <erik.hommel@civicoop.org> 17 Jun 2014      |
+ +--------------------------------------------------------------------+
+ *}
 <div class="crm-block crm-content-block crm-contribution-view-form-block">
 <h3>{ts}View Contribution{/ts}</h3>
 <div class="action-link">
@@ -170,7 +173,17 @@
         </tr>
         {* end BOS1312346 *}
 
-
+        {* BOS1405148 show linked activity and donorgroup *}
+        <tr>
+          <td class="label">{$linkedActivityLabel}</td>
+          <td>{$linkedActivityHtml}</td>
+        </tr>
+        <tr>
+          <td class="label">{$donorGroupLabel}</td>
+          <td>{$donorGroupHtml}</td>
+        </tr>
+        {* end BOS1405148 *}
+        
 	{if $campaign}
 	<tr>
 	    <td class="label">{ts}Campaign{/ts}</td>

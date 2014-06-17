@@ -262,30 +262,80 @@ function recurring_civicrm_pageRun(&$page) {
         //$page->assign('isAdmin', $isAdmin);
         $page->assign('recurArray', $recurArray);
         $page->assign('recurArrayCount', count($recurArray));
-        /*
-         * BOS1312346 add earmaking and balanskonto
-         */
+        
         if ($page->getVar('_action') == CRM_Core_Action::VIEW) {
-            try {
-                $contributionId = $page->getVar('_id');
-            } catch (Exception $ex) {
-                $contributionId = 0;
+          /*
+           * BOS1312346 add earmaking and balanskonto
+           */
+          try {
+            $contributionId = $page->getVar('_id');
+          } catch (Exception $ex) {
+              $contributionId = 0;
+          }
+          if (!empty($contributionId)) {
+            $netsFields = _recurring_getNetsValues($contributionId);
+            if (isset($netsFields['earmarking_label'])) {
+              $page->assign('earMarkingLabel', 'Øremerking');
+              $page->assign('earMarkingHtml', $netsFields['earmarking_label']);
             }
-            if (!empty($contributionId)) {
-                $netsFields = _recurring_getNetsValues($contributionId);
-                if (isset($netsFields['earmarking_label'])) {
-                    $page->assign('earMarkingLabel', 'Øremerking');
-                    $page->assign('earMarkingHtml', $netsFields['earmarking_label']);
-                }
-                if (isset($netsFields['balansekonto_label'])) {
-                    $page->assign('balanseKontoLabel', 'Balansekonto');
-                    $page->assign('balanseKontoHtml', $netsFields['balansekonto_label']);                    
-                }
+            if (isset($netsFields['balansekonto_label'])) {
+              $page->assign('balanseKontoLabel', 'Balansekonto');
+              $page->assign('balanseKontoHtml', $netsFields['balansekonto_label']);                    
             }
+            /*
+             * BOS1405148 add linked activity and donorgroup
+             */
+            $page->assign('linkedActivityLabel', ts('Linked Activity'));
+            $page->assign('donorGroupLabel', ts('Donor Group'));
+            $page->assign('linkedActivityHtml', recurring_get_linked_activity($contributionId));
+            $page->assign('donorGroupHtml', recurring_get_donorgroup($contributionId));
+          }           
         }
     }
-    // endo BOS1312346
+    // endo BOS1312346 & BOS1405148
 }
+/**
+ * Function to get linked donorgroup for contribution
+ * (BOS1405148)
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 17 Jun 2014
+ * @param int $contributionId
+ * @return string $donorgroup
+ */
+function recurring_get_donorgroup($contributionId) {
+  $donorgroup = '';
+  $query = 'SELECT grp.title FROM civicrm_contribution_donorgroup donor '
+    . 'INNER JOIN civicrm_group grp ON donor.group_id = grp.id WHERE donor.contribution_id = %1';
+  $dao = CRM_Core_DAO::executeQuery($query, array(1 => array($contributionId, 'Positive')));
+  if ($dao->fetch()) {
+    $donorgroup = $dao->title;
+  }
+  return $donorgroup;
+}
+/**
+ * Function to get linked activity for contribution
+ * (BOS1405148)
+ * 
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 17 Jun 2014
+ * @param int $contributionId
+ * @return string $activity
+ */
+function recurring_get_linked_activity($contributionId) {
+  $activity = '';
+  $query = 'SELECT act.subject, act.activity_date_time, ov.label AS activity_type '
+    . 'FROM civicrm_contribution_activity link INNER JOIN civicrm_activity act ON '
+    . 'link.activity_id = act.id LEFT JOIN civicrm_option_value ov ON '
+    . 'act.activity_type_id = ov.value AND option_group_id = 2 WHERE link.contribution_id = %1';
+  $dao = CRM_Core_DAO::executeQuery($query, array(1 => array($contributionId, 'Positive')));
+  if ($dao->fetch()) {
+    $activity = $dao->activity_type. ' - '.$dao->subject . ' - ' . 
+      date('d-m-Y', strtotime($dao->activity_date_time));
+  }
+  return $activity;
+}
+
 /**
  * Implementation of hook civicrm_buildForm
  */
