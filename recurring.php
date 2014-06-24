@@ -560,6 +560,16 @@ function recurring_process_offline_recurring_payments() {
 			} else {
 				$contribution = reset($result['values']);
 				$contribution_id = $contribution['id'];
+        
+        /*
+         * BOS1405148 add contribution/activity and contribution/donor group
+         * based on contact and receive_date
+         */
+        $latestActivityId = ocr_get_latest_activity($contribution['contact_id']);
+        ocr_create_contribution_activity($contribution['id'], $latestActivityId);
+        $donorGroupId = ocr_get_contribution_donorgroup($contribution['id'], $contribution['receive_date'], $contribution['contact_id']);
+        ocr_create_contribution_donorgroup($contribution['id'], $donorGroupId);
+        
 				$output[] = ts('Created contribution record for contact id %1', array(1 => $contact_id));
 			}
 		} else {
