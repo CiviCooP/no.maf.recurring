@@ -29,7 +29,7 @@ define('MAF_RECURRING_DAYS_LOOKAHEAD', 60);
 /*
  * BOS1405148 define constant for top level donor journey group
  */
-if (!defined(MAF_DONORJOURNEY_GROUP)) {
+if (!defined('MAF_DONORJOURNEY_GROUP')) {
   define('MAF_DONORJOURNEY_GROUP', 6509);
 }
 
