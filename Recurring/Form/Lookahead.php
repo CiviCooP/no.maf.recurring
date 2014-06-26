@@ -78,7 +78,7 @@ class Recurring_Form_Lookahead {
         ) {
 
             try {
-                $createdContributiion = civicrm_api3('contribution', 'create', array(
+                $createdContribution = civicrm_api3('contribution', 'create', array(
                     /*
                      * BOS1312346 add financial type to contribution
                      * from recur (removed default 1)
@@ -101,7 +101,14 @@ class Recurring_Form_Lookahead {
              * BOS1312346 set default values for earmarking and balansekonto
              * in nets_transactions custom group
              */
-            _recurring_setNetsDefaults($createdContributiion['id'], $params['recur_id']);
+            _recurring_setNetsDefaults($createdContribution['id'], $params['recur_id']);
+            /*
+             * BOS1405148 set default values for linked activity and donorgroup
+             */
+            $latestActivityId = ocr_get_latest_activity($params['cid']);
+            ocr_create_contribution_activity($createdContribution['id'], $latestActivityId);
+            $donorGroupId = ocr_get_contribution_donorgroup($createdContribution['id'], $date->format('c'), $params['cid']);
+            ocr_create_contribution_donorgroup($createdContribution['id'], $donorGroupId);
 
         }
 
