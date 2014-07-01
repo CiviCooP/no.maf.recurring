@@ -637,7 +637,7 @@ function recurring_process_offline_recurring_payments() {
 	
     // If errors ..
     if ($errors)
-        return civicrm_api_create_error(
+        return civicrm_api3_create_error(
             ts("Completed, but with %1 errors. %2 records processed.",
                 array(
                     1 => $errors,
