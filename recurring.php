@@ -685,7 +685,10 @@ function _recurring_getOptionList($listName) {
     } catch (CiviCRM_API3_Exception $e) {
         throw new CiviCRM_API3_Exception('Could not find an option group with the name'.$listName.', message from API OptionGroup Getvalue : '.$e->getMessage);
     }
-    $apiOptionList = civicrm_api3('OptionValue', 'Get', array("option_group_id" => $optionGroupId));
+    $optionValuesParams = array(
+        'option_group_id' => $optionGroupId,
+        'options' => array('limit' => 99999));
+    $apiOptionList = civicrm_api3('OptionValue', 'Get', $optionValuesParams);
     foreach($apiOptionList['values'] as $optionElement) {
         $optionList[$optionElement['value']] = $optionElement['label'];
     }
