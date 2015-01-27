@@ -677,6 +677,7 @@ function _recurring_getOptionList($listName) {
      */
     $optionGroupParams = array(
         'name'    =>  $listName,
+        'options' => array('limit' => 9999),
         'return'  =>  "id"
     );
     try {
