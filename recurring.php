@@ -25,7 +25,12 @@
  * @date 31 Mar 2014
  */
 
-define('MAF_RECURRING_DAYS_LOOKAHEAD', 60);
+/*
+ * BOS15011047 change lookahead days to 77
+ */
+//define('MAF_RECURRING_DAYS_LOOKAHEAD', 60);
+define('MAF_RECURRING_DAYS_LOOKAHEAD', 77);
+
 /*
  * BOS1405148 define constant for top level donor journey group
  */
