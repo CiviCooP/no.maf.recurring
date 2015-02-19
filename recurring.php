@@ -38,47 +38,6 @@ if (!defined('MAF_DONORJOURNEY_GROUP')) {
   define('MAF_DONORJOURNEY_GROUP', 6509);
 }
 
-// Early 4.3 versions do not include civicrm_api3 wrapper
-if (!class_exists('CiviCRM_API3_Exception')) {
-
-    class CiviCRM_API3_Exception extends Exception {
-
-        private $extraParams = array();
-
-        public function __construct($message, $error_code, $extraParams = array(),Exception $previous = null) {
-            parent::__construct(ts($message));
-            $this->extraParams = $extraParams + array('error_code' => $error_code);
-        }
-
-        // custom string representation of object
-        public function __toString() {
-            return __CLASS__ . ": [{$this->extraParams['error_code']}: {$this->message}\n";
-        }
-
-        public function getErrorCode() {
-            return $this->extraParams['error_code'];
-        }
-
-        public function getExtraParams() {
-            return $this->extraParams;
-        }
-
-    }
-
-}
-
-if (!function_exists('civicrm_api3')) {
-
-    function civicrm_api3($entity, $action, $params = array()) {
-        $params['version'] = 3;
-        $result = civicrm_api($entity, $action, $params);
-        if(is_array($result) && !empty($result['is_error'])){
-            throw new CiviCRM_API3_Exception($result['error_message'], CRM_Utils_Array::value('error_code', $result, 'undefined'), $result);
-        }
-        return $result;
-    }
-}
-
 function recurring_civicrm_config(&$config) {
 
     $template = &CRM_Core_Smarty::singleton();
