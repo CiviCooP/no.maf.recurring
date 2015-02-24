@@ -218,7 +218,7 @@ function recurring_civicrm_pageRun(&$page) {
                  * BOS1312355 add end_date to array
                  */
                 'end_date'                => $dao->end_date,
-                'next_sched_contribution' => $dao->next_sched_contribution
+                'next_sched_contribution_date' => $dao->next_sched_contribution_date
             );
 
         //for contribution tabular View
@@ -432,7 +432,7 @@ function _recurring_lookup_params_for_mailing($mailing_id) {
     if ($dao->fetch())
         foreach (array(
             'id', 'mailing_id', 'amount', 'frequency_unit', 'frequency_interval',
-            'start_date', 'end_date', 'next_sched_contribution', 'maximum_amount',
+            'start_date', 'end_date', 'next_sched_contribution_date', 'maximum_amount',
             'payment_type_id', 'notification_for_bank'
         ) as $field)
             $mailing[$field] = $dao->$field;
@@ -468,8 +468,8 @@ function recurring_process_offline_recurring_payments() {
         SELECT * FROM civicrm_contribution_recur ccr
 		INNER JOIN civicrm_contribution_recur_offline ccro ON ccro.recur_id = ccr.id
          WHERE (ccr.end_date IS NULL OR ccr.end_date > %1)
-           AND ccr.next_sched_contribution >= %2
-           AND ccr.next_sched_contribution <= %3
+           AND ccr.next_sched_contribution_date >= %2
+           AND ccr.next_sched_contribution_date <= %3
     ", array(
           1 => array(date('c', $lookahead_day), 'String'),
           2 => array($dayStart, 'String'),
@@ -489,7 +489,7 @@ function recurring_process_offline_recurring_payments() {
         $contribution_recur_id      = $dao->id;
         $contribution_type_id       = 1;
         $source                     = "Offline Recurring Contribution";
-        $receive_date               = date("YmdHis", strtotime($dao->next_sched_contribution));
+        $receive_date               = date("YmdHis", strtotime($dao->next_sched_contribution_date));
         $contribution_status_id     = 2;    // Set to pending, must complete manually
         $payment_instrument_id      = 3;
 		
@@ -550,7 +550,7 @@ function recurring_process_offline_recurring_payments() {
 		}
 		
         //$mem_end_date = $member_dao->end_date;
-        $temp_date = strtotime($dao->next_sched_contribution);
+        $temp_date = strtotime($dao->next_sched_contribution_date);
 
         $next_collectionDate = strtotime ("+$dao->frequency_interval $dao->frequency_unit", $temp_date);
 		$next_collectionDate_Y = date('Y', $next_collectionDate);
@@ -561,7 +561,7 @@ function recurring_process_offline_recurring_payments() {
 
         CRM_Core_DAO::executeQuery("
             UPDATE civicrm_contribution_recur
-               SET next_sched_contribution = %1
+               SET next_sched_contribution_date = %1
              WHERE id = %2
         ", array(
                1 => array($next_collectionDate, 'String'),

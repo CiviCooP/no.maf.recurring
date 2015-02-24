@@ -110,7 +110,7 @@
               {* BOS1312355 add end_date to recurring contribution tab *}
               <td>{$row.end_date|crmDate}</td>
               
-              <td>{$row.next_sched_contribution|crmDate}</td>
+              <td>{$row.next_sched_contribution_date|crmDate}</td>
               <!--<td>{$row.standard_price}</td>
               <td>{$row.vat_rate}</td>-->
               <td>

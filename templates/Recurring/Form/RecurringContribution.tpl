@@ -53,7 +53,7 @@
 				<tr><td class="label">{$form.amount.label}</td><td>{$form.amount.html}</td><tr>
 				<tr><td>&nbsp;</td><td><p><strong>{$form.is_1recur.html} {ts}{$form.frequency_interval.label}{/ts} &nbsp;{$form.frequency_interval.html} &nbsp; {$form.frequency_unit.html}<!--&nbsp; {ts}for{/ts} &nbsp; {$form.installments.html} &nbsp;{$form.installments.label}--></strong></td></tr>
 				<tr><td class="label">{$form.start_date.label}</td><td>{include file="CRM/common/jcalendar.tpl" elementName=start_date}</td></tr>
-				<tr><td class="label">{$form.next_sched_contribution.label}</td><td>{include file="CRM/common/jcalendar.tpl" elementName=next_sched_contribution}<br />
+				<tr><td class="label">{$form.next_sched_contribution_date.label}</td><td>{include file="CRM/common/jcalendar.tpl" elementName=next_sched_contribution_date}<br />
 				<div class="description">{ts}This is the date the contribution record will be created for the recurring payment (by the background process). If you want the first contribution on the start date, this should be same as start date.{/ts}</div>
         </td></tr>
 				<tr><td class="label">{$form.end_date.label}</td><td>{include file="CRM/common/jcalendar.tpl" elementName=end_date} <br/>

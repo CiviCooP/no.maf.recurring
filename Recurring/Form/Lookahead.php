@@ -44,7 +44,7 @@ class Recurring_Form_Lookahead {
     public function contributionCreate($params) {
 
         // loop to create all scheduled contributions between 
-        // next_sched_contribution and recur end_date or 45 days time
+        // next_sched_contribution_date and recur end_date or 45 days time
 
         $status_id = array_flip(CRM_Contribute_PseudoConstant::contributionStatus());
         $error     = false;
@@ -55,13 +55,13 @@ class Recurring_Form_Lookahead {
             $start_date = CRM_Utils_Date::processDate($params['start_date']);
         if(!empty($params['end_date']))
             $end_date = CRM_Utils_Date::processDate($params['end_date']);
-        if(!empty($params['next_sched_contribution']))    
-            $next_sched_contribution = CRM_Utils_Date::processDate($params['next_sched_contribution']);
+        if(!empty($params['next_sched_contribution_date']))
+            $next_sched_contribution_date = CRM_Utils_Date::processDate($params['next_sched_contribution_date']);
 
         for (
             
             // initializer
-            $date    = new DateTime($next_sched_contribution),
+            $date    = new DateTime($next_sched_contribution_date),
             $counter = 0; 
             
             // condition
@@ -130,7 +130,7 @@ class Recurring_Form_Lookahead {
             // Update next_sched_date on civicrm_contribution_recur
             CRM_Core_DAO::executeQuery("
                 UPDATE civicrm_contribution_recur 
-                   SET next_sched_contribution = %1 
+                   SET next_sched_contribution_date = %1
                  WHERE id = %2
             ", array(
                    1 => array($date->format('c'), 'String'),
@@ -167,8 +167,8 @@ class Recurring_Form_Lookahead {
             $start_date = CRM_Utils_Date::processDate($params['start_date']);
         if(!empty($params['end_date']))
             $end_date = CRM_Utils_Date::processDate($params['end_date']);
-        if(!empty($params['next_sched_contribution']))    
-            $next_sched_contribution = CRM_Utils_Date::processDate($params['next_sched_contribution']);
+        if(!empty($params['next_sched_contribution_date']))
+            $next_sched_contribution_date = CRM_Utils_Date::processDate($params['next_sched_contribution_date']);
 
         $dao = CRM_Core_DAO::executeQuery("
                 SELECT c.id FROM civicrm_contribution c
@@ -227,7 +227,7 @@ class Recurring_Form_Lookahead {
         )) {
             
             $current_next_scheduled   = new DateTime($last_not_deleted);
-            $requested_next_scheduled = new DateTime($next_sched_contribution);
+            $requested_next_scheduled = new DateTime($next_sched_contribution_date);
             
             $current_next_scheduled->modify(
                 '+' . $params['frequency_interval'] . 
@@ -240,10 +240,10 @@ class Recurring_Form_Lookahead {
 			$current_next_scheduled = new DateTime($current_next_scheduled_Y.'-'.$current_next_scheduled_M.'-'.$current_next_scheduled_D);
 
             if ($current_next_scheduled > $requested_next_scheduled)
-                $params['next_sched_contribution'] = $current_next_scheduled->format('c');
+                $params['next_sched_contribution_date'] = $current_next_scheduled->format('c');
         }
 
-        // having modified next_sched_contribution (if necessary), pass $params
+        // having modified next_sched_contribution_date (if necessary), pass $params
         // through to our creation function, which should re-create the 
         // necessary contributions
         $this->contributionCreate($params);

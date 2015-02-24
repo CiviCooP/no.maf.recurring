@@ -81,7 +81,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
                     'frequency_unit'          => $dao->frequency_unit,
                     'start_date'              => $dao->start_date,
                     'processor_id'            => $dao->processor_id,
-                    'next_sched_contribution' => $dao->next_sched_contribution,
+                    'next_sched_contribution_date' => $dao->next_sched_contribution_date,
                     'end_date'                => $dao->end_date,
                     'recur_id'                => $dao->id,
                     'maximum_amount'          => $dao->maximum_amount,
@@ -102,11 +102,11 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
                } else {
                    $defaults['start_date'] = "";     
                }                       
-               if (CRM_Utils_Array::value( 'next_sched_contribution', $defaults) && !empty($dao->next_sched_contribution) && $dao->next_sched_contribution != '0000-00-00') {
-                   list($defaults['next_sched_contribution'], $defaults['next_sched_contribution_time']) 
-                        = CRM_Utils_Date::setDateDefaults($defaults['next_sched_contribution'], 'activityDate');    
+               if (CRM_Utils_Array::value( 'next_sched_contribution_date', $defaults) && !empty($dao->next_sched_contribution_date) && $dao->next_sched_contribution_date != '0000-00-00') {
+                   list($defaults['next_sched_contribution_date'], $defaults['next_sched_contribution_date_time'])
+                        = CRM_Utils_Date::setDateDefaults($defaults['next_sched_contribution_date'], 'activityDate');
                } else {
-                   $defaults['next_sched_contribution'] = "";     
+                   $defaults['next_sched_contribution_date'] = "";
                }
                if (CRM_Utils_Array::value('end_date', $defaults) && !empty($dao->start_date) && $dao->start_date != '0000-00-00') {
                    list($defaults['end_date'], $defaults['end_date_time']) 
@@ -141,7 +141,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
         $payment_types = array(0 => ts('Select...')) + _recurring_getPaymentTypes();
                                             
         $this->addDate('start_date', ts('Start Date'), true, array('formatType' => 'activityDate'));
-        $this->addDate('next_sched_contribution', ts('Next Scheduled Date'), true, array( 'formatType' => 'activityDate'));
+        $this->addDate('next_sched_contribution_date', ts('Next Scheduled Date'), true, array( 'formatType' => 'activityDate'));
         $this->addDate('end_date', ts('End Date'), false, array('formatType' => 'activityDate'));
 
         $this->add('text', 'maximum_amount', ts('Maximum Amount'), array(), true);
@@ -218,14 +218,14 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
             $start_date = CRM_Utils_Date::processDate($params['start_date']);
         if(!empty($params['end_date']))
             $end_date = CRM_Utils_Date::processDate($params['end_date']);
-        if(!empty($params['next_sched_contribution']))    
-            $next_sched_contribution = CRM_Utils_Date::processDate($params['next_sched_contribution']);	
-            $params['cycle_day']  = date('d', strtotime($next_sched_contribution));
+        if(!empty($params['next_sched_contribution_date']))
+            $next_sched_contribution_date = CRM_Utils_Date::processDate($params['next_sched_contribution_date']);
+            $params['cycle_day']  = date('d', strtotime($next_sched_contribution_date));
             
         if ($params['action'] == 'add') {
 
             $fields       = "id, contact_id, amount, frequency_interval, frequency_unit, invoice_id, " . 
-                            "trxn_id, currency, create_date, start_date, next_sched_contribution, cycle_day";
+                            "trxn_id, currency, create_date, start_date, next_sched_contribution_date, cycle_day";
             $values       = "NULL, %1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11";
             $invoice_id   = md5(uniqid(rand(), true));
 
@@ -239,8 +239,8 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
                 7  => array($config->defaultCurrency,      'String'),
                 8  => array(date('YmdHis'),                'String'),
                 9  => array($start_date,                   'String'),
-                10 => array($next_sched_contribution,      'String'),
-				11 =>  array(date('d', strtotime($next_sched_contribution)), 'String'),
+                10 => array($next_sched_contribution_date,      'String'),
+				11 =>  array(date('d', strtotime($next_sched_contribution_date)), 'String'),
 
             );
 
@@ -281,15 +281,15 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
             $sql = "
                 UPDATE civicrm_contribution_recur 
                    SET amount = %1, frequency_interval = %2, frequency_unit = %3, 
-                       start_date = %4, next_sched_contribution = %5, cycle_day = %6, modified_date = %7
+                       start_date = %4, next_sched_contribution_date = %5, cycle_day = %6, modified_date = %7
             "; 
             $recur_params = array(
                 1 =>  array($params['amount'],                'String'),
                 2 =>  array($params['frequency_interval'],    'String'),
                 3 =>  array($params['frequency_unit'],        'String'),
                 4 =>  array($start_date,                      'String'),   
-                5 =>  array($next_sched_contribution,         'String'),
-				6 =>  array(date('d', strtotime($next_sched_contribution)), 'String'),
+                5 =>  array($next_sched_contribution_date,         'String'),
+				6 =>  array(date('d', strtotime($next_sched_contribution_date)), 'String'),
                 7 =>  array(date('YmdHis'),                   'String'),
                 8 =>  array($params['recur_id'],              'Integer')
             );
