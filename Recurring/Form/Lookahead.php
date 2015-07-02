@@ -34,10 +34,9 @@ class Recurring_Form_Lookahead {
                     2 => __LINE__
                 )
             ));
-        
-        $this->field_group_id = reset(array_keys(
-            CRM_Core_BAO_Setting::getItem('no.maf.ocr', 'custom_fields')
-        ));
+
+        $custom_fields = CRM_Core_BAO_Setting::getItem('no.maf.ocr', 'custom_fields');
+        $this->field_group_id = reset(array_keys($custom_fields));
 
     }
 
@@ -126,7 +125,6 @@ class Recurring_Form_Lookahead {
             ));
 
         } else {
-            
             // Update next_sched_date on civicrm_contribution_recur
             CRM_Core_DAO::executeQuery("
                 UPDATE civicrm_contribution_recur 
