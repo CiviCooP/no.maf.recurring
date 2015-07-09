@@ -232,6 +232,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
     $params['cycle_day'] = date('d', strtotime($next_sched_contribution_date));
 
     $contributionRecur = array();
+    $contributionRecur['contact_id'] = $params['cid'];
     $contributionRecur['amount'] = $params['amount'];
     $contributionRecur['frequency_interval'] = $params['frequency_interval'];
     $contributionRecur['frequency_unit'] = $params['frequency_unit'];
@@ -254,14 +255,13 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
 
     if ($params['action'] == 'add') {
       $invoice_id = md5(uniqid(rand(), TRUE));
-      $contributionRecur['contact_id'] = $params['cid'];
       $contributionRecur['invoice_id'] = $invoice_id;
       $contributionRecur['trxn_id'] = $invoice_id;
       $contributionRecur['currency'] = $config->defaultCurrency;
       $contributionRecur['create_date'] = date('YmdHis');
 
       $objectRef = CRM_Contribute_BAO_ContributionRecur::add($contributionRecur);
-      $recur_id = $objectRef->id;
+      $params['recur_id'] = $objectRef->id;
       $status = ts('Recurring Contribution setup successfully');
     } elseif ($params['action'] == 'update') {
       $contributionRecur['id'] = $params['recur_id'];
@@ -283,7 +283,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
               (%1, %2, %3, %4, %5)
         ";
     $recurOfflineParams = array(
-      1 => array($recur_id, 'Integer'),
+      1 => array($params['recur_id'], 'Integer'),
       2 => array($params['maximum_amount'], 'Money'),
       3 => array($params['payment_type'], 'Integer'),
       4 => array($params['notification_for_bank'], 'Integer'),
@@ -295,7 +295,6 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
     require_once __DIR__ . DIRECTORY_SEPARATOR . 'Lookahead.php';
     $lookahead = new Recurring_Form_Lookahead();
     if ($params['action'] == 'add') {
-      $params['recur_id'] = $recur_id;
       $lookahead->contributionCreate($params);
     }
     else {
