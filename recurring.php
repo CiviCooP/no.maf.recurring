@@ -463,19 +463,19 @@ function recurring_process_offline_recurring_payments() {
     $dayStart = date("Ymd", strtotime('now')) . "000000";
     $dayEnd   = date("Ymd", $lookahead_day) . "235959";
 
-    // Select the recurring payment, where current date is equal to next scheduled date
-    $dao = CRM_Core_DAO::executeQuery("
-        SELECT * FROM civicrm_contribution_recur ccr
+  $recurQuery = "SELECT * FROM civicrm_contribution_recur ccr
 		INNER JOIN civicrm_contribution_recur_offline ccro ON ccro.recur_id = ccr.id
          WHERE (ccr.end_date IS NULL OR ccr.end_date > %1)
            AND ccr.next_sched_contribution_date >= %2
-           AND ccr.next_sched_contribution_date <= %3
-    ", array(
-          1 => array(date('c', $lookahead_day), 'String'),
-          2 => array($dayStart, 'String'),
-          3 => array($dayEnd, 'String')
-       )
-    );
+           AND ccr.next_sched_contribution_date <= %3";
+  $recurParams = array(
+    1 => array(date('c', $lookahead_day), 'String'),
+    2 => array($dayStart, 'String'),
+    3 => array($dayEnd, 'String')
+  );
+
+    // Select the recurring payment, where current date is equal to next scheduled date
+    $dao = CRM_Core_DAO::executeQuery($recurQuery, $recurParams);
 
     $counter = 0;
     $errors  = 0;
@@ -647,7 +647,7 @@ function _recurring_getOptionList($listName) {
     try {
         $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
     } catch (CiviCRM_API3_Exception $e) {
-        throw new CiviCRM_API3_Exception('Could not find an option group with the name'.$listName.', message from API OptionGroup Getvalue : '.$e->getMessage);
+        throw new API_Exception('Could not find an option group with the name'.$listName.', message from API OptionGroup Getvalue : '.$e->getMessage);
     }
     $optionValuesParams = array(
         'option_group_id' => $optionGroupId,
@@ -676,7 +676,7 @@ function _recurring_getNetsField($fieldName) {
     try {
         $netsGroupId = civicrm_api3('CustomGroup', 'Getvalue', $netsGroupParams);
     } catch (CiviCRM_API3_Exception $e) {
-        throw new CiviCRM_API3_Exception('Could not find custom group with name
+        throw new API_Exception('Could not find custom group with name
             nets_transactions, something is wrong with your setup. Error message 
             from API CustomGroup Getvalue :'.$e->getMessage());
     }
@@ -715,7 +715,7 @@ function _recurring_getNetsOptionValue($optionValue, $optionName) {
     try {
         $optionGroupId = civicrm_api3('OptionGroup', 'Getvalue', $optionGroupParams);
     } catch (CiviCRM_API3_Exception $e) {
-        throw new CiviCRM_API3_Exception('Could not find an option group for '.
+        throw new API_Exception('Could not find an option group for '.
             $optionName.' , error message from API OptionGroup Getvalue : '.$e->getMessage());
     }
     $optionValueParams = array(
@@ -726,7 +726,7 @@ function _recurring_getNetsOptionValue($optionValue, $optionName) {
     try {
         $optionLabel = civicrm_api3('OptionValue', 'Getvalue', $optionValueParams);
     } catch (CiviCRM_API3_Exception $e) {
-        throw new CiviCRM_API3_Exception('Could not find a valid label in option group  '.
+        throw new API_Exception('Could not find a valid label in option group  '.
             $optionName.' for value '.$optionValue.' , error message from API OptionValue Getvalue : '.$e->getMessage());
     }
     return $optionLabel;    
