@@ -220,12 +220,6 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
     $params = $this->controller->exportValues();
     $params['recur_id'] = $this->get('id');
 
-    if (!empty($params['start_date'])) {
-      $start_date = CRM_Utils_Date::processDate($params['start_date']);
-    }
-    if (!empty($params['end_date'])) {
-      $end_date = CRM_Utils_Date::processDate($params['end_date']);
-    }
     if (!empty($params['next_sched_contribution_date'])) {
       $next_sched_contribution_date = CRM_Utils_Date::processDate($params['next_sched_contribution_date']);
     }
@@ -236,11 +230,17 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
     $contributionRecur['amount'] = $params['amount'];
     $contributionRecur['frequency_interval'] = $params['frequency_interval'];
     $contributionRecur['frequency_unit'] = $params['frequency_unit'];
-    $contributionRecur['start_date'] = $start_date;
+    if (isset($params['start_date'])) {
+      $contributionRecur['start_date'] = CRM_Utils_Date::processDate($params['start_date']);
+    }
     $contributionRecur['next_sched_contribution_date'] = $next_sched_contribution_date;
     $contributionRecur['cycle_day'] = date('d', strtotime($next_sched_contribution_date));
-    if (isset($end_date)) {
-      $contributionRecur['end_date'] = $end_date;
+    if (isset($params['end_date'])) {
+      $contributionRecur['end_date'] = CRM_Utils_Date::processDate($params['end_date']);
+    } else {
+      if ($params['action'] == "update") {
+        $contributionRecur['end_date'] = "";
+      }
     }
     /*
      * BOS1312346 set financial type based on earmarking
