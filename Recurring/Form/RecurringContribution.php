@@ -1,6 +1,6 @@
 <?php
 
-/* 
+/**
  * CiviCRM Offline Recurring Payment Extension for CiviCRM - Circle Interactive 2013
  * Original author: rajesh
  * http://sourceforge.net/projects/civicrmoffline/
@@ -13,6 +13,10 @@
  * BOS1312346 - add earmarking to Recurring Contribution
  * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
  * @date 27 Mar 2014
+ *
+ * Issue 630 - add defaults and validation <https://civicoop.plan.io/issues/630>
+ * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+ * @date 31 Aug 2016
  */
 require_once 'CRM/Core/Form.php';
 require_once 'CRM/Core/Session.php';
@@ -120,7 +124,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
       $this->addElement('hidden', 'recur_id', $id);
     }
 
-    $this->add('text', 'amount', ts('Amount'), array(), TRUE);
+    $this->add('text', 'amount', ts('Amount'), array());
     $this->add('text', 'frequency_interval', ts('Every'), array(
       'maxlength' => 2,
       'size' => 2
@@ -149,7 +153,7 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
     $this->addDate('next_sched_contribution_date', ts('Next Scheduled Date'), TRUE, array('formatType' => 'activityDate'));
     $this->addDate('end_date', ts('End Date'), FALSE, array('formatType' => 'activityDate'));
 
-    $this->add('text', 'maximum_amount', ts('Maximum Amount'), array(), TRUE);
+    $this->add('text', 'maximum_amount', ts('Maximum Amount'), array());
     $this->add('select', 'payment_type', ts('Payment Type'), $payment_types, TRUE);
     /*
      * BOS1312346
@@ -162,6 +166,19 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
     $options[] = &HTML_QuickForm::createElement('radio', NULL, NULL, 'No', 0);
 
     $this->addGroup($options, 'notification_for_bank', ts('Notification for bank'));
+
+    /**
+     * Add defaults for issue 630 (check <https://civicoop.plan.io/issues/630>)
+     * @author Erik Hommel <erik.hommel@civicoop.org>
+     * @date 31 Aug 2016
+     *
+     */
+    $defaults['maximum_amount'] = 1000;
+    $defaults['notification_for_bank'] = 0;
+    $defaults['payment_type'] = 3;
+    $defaults['earmarking'] = 333;
+    list($defaults['start_date']) = CRM_Utils_Date::setDateDefaults(date('d-m-Y'));
+
 
     if (isset($defaults)) {
       $this->setDefaults($defaults);
@@ -207,6 +224,48 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
     }
     return $errors;
   }
+
+  /**
+   * Method to add validation rules
+   *
+   * Issue 630 (check <https://civicoop.plan.io/issues/630>
+   * maximum amount and notification to bank can not be empty when avtale giro
+   * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+   * @date 31 Aug 2016
+   */
+  function addRules() {
+    $this->addFormRule(array('Recurring_Form_RecurringContribution', 'validateAvtale'));
+  }
+
+  /**
+   * Method to validate in case the payment method is AvtaleGiro
+   *
+   * Issue 630 (check <https://civicoop.plan.io/issues/630>
+   * maximum amount and notification to bank can not be empty when avtale giro
+   * @author Erik Hommel (CiviCooP) <erik.hommel@civicoop.org>
+   * @date 31 Aug 2016
+   *
+   * @param $fields
+   * @return bool|array
+   * @static
+   */
+  static function validateAvtale($fields) {
+    $errors = array();
+    if (isset($fields['payment_type']) && $fields['payment_type'] == 2) {
+      if (empty($fields['maximum_amount'])) {
+        $errors['maximum_amount'] = ts('Maximum amount can not be empty for payment term Avtale Giro!');
+      }
+      if ($fields['notification_for_bank'] != 0 && $fields['notification_for_bank'] != 1) {
+        $errors['notification_for_bank'] = ts('Notification for Bank can not be empty for payment term Avtale Giro!');
+      }
+    }
+    if (!empty($errors)) {
+      return $errors;
+    }
+    return TRUE;
+  }
+
+
 
   /**
    * process the form after the input has been submitted and validated
