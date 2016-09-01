@@ -173,12 +173,13 @@ class Recurring_Form_RecurringContribution extends CRM_Core_Form {
      * @date 31 Aug 2016
      *
      */
-    $defaults['maximum_amount'] = 1000;
-    $defaults['notification_for_bank'] = 0;
-    $defaults['payment_type'] = 3;
-    $defaults['earmarking'] = 333;
-    list($defaults['start_date']) = CRM_Utils_Date::setDateDefaults(date('d-m-Y'));
-
+    if ($this->_action == CRM_Core_Action::ADD) {
+      $defaults['maximum_amount'] = 1000;
+      $defaults['notification_for_bank'] = 0;
+      $defaults['payment_type'] = 3;
+      $defaults['earmarking'] = 333;
+      list($defaults['start_date']) = CRM_Utils_Date::setDateDefaults(date('d-m-Y'));
+    }
 
     if (isset($defaults)) {
       $this->setDefaults($defaults);
